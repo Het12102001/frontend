@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --bg-app: #f8fafc;
+  --primary: #2563eb;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  /* Subtle, professional background pattern */
+  background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#root {
+  width: 100%;
+}
