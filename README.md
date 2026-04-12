@@ -1,16 +1,32 @@
-# React + Vite
+# 🚀 SocialHub Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, high-performance social media application frontend built with React. This repository serves as the client-side interface for a robust backend architecture, delivering a seamless and secure user experience. 
 
-Currently, two official plugins are available:
+Built with persistence, clean code, and a focus on real-world problem-solving.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚡ Key Features
 
-## React Compiler
+* **AI Privacy Firewall Integration:** Interacts seamlessly with the backend's Google Gemini AI moderation engine to detect and block toxic content, hate speech, and harassment in real-time before it hits the database.
+* **Secure Authentication:** Implements JWT-based security flows for secure user login, registration, and session management.
+* **Real-Time Communication:** Features a dynamic chat system with message deletion capabilities.
+* **Responsive UI/UX:** A clean, funky, and intuitive developer-focused aesthetic that adapts perfectly to any screen size.
+* **Media Handling:** Smooth image and media upload processing synced with backend storage.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+* **Framework:** React.js
+* **Styling:** [Insert CSS framework if you used one, e.g., Tailwind CSS, Material UI, or Custom CSS]
+* **Routing:** React Router
+* **State Management:** [Insert if applicable, e.g., Redux, Context API]
+* **API Communication:** Axios / Fetch API
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🔌 Backend Architecture
+This frontend is designed to work in tandem with a high-powered Spring Boot backend (Java, PostgreSQL, Redis). The backend handles the heavy lifting, including the AI content moderation, database caching, and websocket connections. 
+
+## 🚀 Quick Start
+
+To get this project running locally on your machine:
+
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/YourUsername/SocialHub-Frontend.git](https://github.com/YourUsername/SocialHub-Frontend.git)
