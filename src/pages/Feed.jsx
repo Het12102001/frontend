@@ -305,7 +305,9 @@ const Feed = () => {
 
       {/* ── Main ── */}
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 24px', display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-        <div style={{ minWidth: 0 }} className="stagger">
+
+        {/* ── LEFT COLUMN — posts feed ── */}
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }} className="stagger">
 
           {/* Create Post */}
           <div style={{ ...card, padding: '20px' }}>
