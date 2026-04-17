@@ -2,359 +2,307 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { 
-  ArrowLeft, Heart, MessageCircle, Settings, Camera, 
-  X, UserCheck, UserPlus, Grid, Users, Trash2, ShieldAlert 
+import {
+  ArrowLeft, Heart, MessageCircle, Settings, Camera,
+  X, UserCheck, UserPlus, Grid, Users, Trash2, ShieldAlert, ShieldCheck
 } from 'lucide-react';
+
+const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' };
+const iconBtn = { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', transition: 'all var(--transition)', padding: '8px', color: 'var(--text-3)' };
+
+const Avatar = ({ user, size = 40 }) => (
+  <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: size * 0.35 }}>
+    {user?.profileImageUrl
+      ? <img src={`http://localhost:8080/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      : (user?.username?.[0] || '?').toUpperCase()}
+  </div>
+);
 
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  
+
   const [profileData, setProfileData] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMyProfile, setIsMyProfile] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); 
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-
-  // Tabs and Connection Lists
-  const [activeTab, setActiveTab] = useState('posts'); 
+  const [activeTab, setActiveTab] = useState('posts');
   const [followersList, setFollowersList] = useState([]);
   const [followingList, setFollowingList] = useState([]);
-
-  // Edit Profile States
   const [isEditing, setIsEditing] = useState(false);
-  const [editBio, setEditBio] = useState("");
+  const [editBio, setEditBio] = useState('');
   const [editFile, setEditFile] = useState(null);
-  const [editPreviewUrl, setEditPreviewUrl] = useState("");
+  const [editPreviewUrl, setEditPreviewUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchProfile = async () => {
     try {
       setIsLoading(true);
-      
-      // 1. Fetch Profile User Info
       const userRes = await api.get(`/users/username/${username}`);
       setProfileData(userRes.data);
-      setEditBio(userRes.data.bio || ""); 
+      setEditBio(userRes.data.bio || '');
       setIsFollowing(userRes.data.isFollowing);
-
-      // 2. Fetch User's Posts
       const postsRes = await api.get(`/posts/user/${username}?page=0&size=20`);
       setUserPosts(postsRes.data.content || []);
-
-      // 3. Fetch Connection Lists
       const followersRes = await api.get(`/users/${username}/followers`);
       setFollowersList(followersRes.data || []);
-      
       const followingRes = await api.get(`/users/${username}/following`);
       setFollowingList(followingRes.data || []);
-
-      // 4. Check Roles and Identity of the LOGGED IN user
       const meRes = await api.get('/users/me/details');
-      
-      // Check if I am an admin
-      if (meRes.data.role === 'ROLE_ADMIN') {
-        setIsAdmin(true);
-      }
-
-      // Check if I am looking at my own profile
-      if (userRes.data.email.toLowerCase() === meRes.data.email.toLowerCase()) {
-        setIsMyProfile(true);
-      } else {
-        setIsMyProfile(false);
-      }
+      setIsAdmin(meRes.data.role === 'ROLE_ADMIN');
+      setIsMyProfile(userRes.data.email.toLowerCase() === meRes.data.email.toLowerCase());
     } catch (err) {
-      console.error("Error loading profile:", err);
-    } finally {
-      setIsLoading(false);
-    }
+      console.error(err);
+    } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    setActiveTab('posts'); 
-    fetchProfile();
-  }, [username]);
+  useEffect(() => { setActiveTab('posts'); fetchProfile(); }, [username]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setEditFile(file);
-      setEditPreviewUrl(URL.createObjectURL(file));
-    }
+    if (file) { setEditFile(file); setEditPreviewUrl(URL.createObjectURL(file)); }
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
+  const handleEditSubmit = async () => {
     setIsSaving(true);
     const formData = new FormData();
     formData.append('bio', editBio);
     if (editFile) formData.append('file', editFile);
-
     try {
-      await api.put('/users/profile/edit', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setIsEditing(false);
-      setEditFile(null);
-      setEditPreviewUrl("");
-      fetchProfile(); 
-    } catch (err) {
-      alert("Failed to update profile.");
-    } finally {
-      setIsSaving(false);
-    }
+      await api.put('/users/profile/edit', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setIsEditing(false); setEditFile(null); setEditPreviewUrl('');
+      fetchProfile();
+    } catch { alert('Update failed.'); }
+    finally { setIsSaving(false); }
   };
 
   const handleFollowToggle = async () => {
     try {
       await api.post(`/users/${profileData.id}/follow`);
       setIsFollowing(!isFollowing);
-      setProfileData(prev => ({
-        ...prev,
-        followersCount: isFollowing ? prev.followersCount - 1 : prev.followersCount + 1
-      }));
-      // Update followers list after toggle
-      const followersRes = await api.get(`/users/${username}/followers`);
-      setFollowersList(followersRes.data || []);
-    } catch (err) {
-      alert("Something went wrong. Try again.");
-    }
+      setProfileData(prev => ({ ...prev, followersCount: isFollowing ? prev.followersCount - 1 : prev.followersCount + 1 }));
+      const r = await api.get(`/users/${username}/followers`);
+      setFollowersList(r.data || []);
+    } catch { alert('Action failed.'); }
   };
 
-  // 🚀 LOGIC: User deletes their own account
   const handleDeleteMyAccount = async () => {
-    const confirmed = window.confirm(
-      "🚨 DANGER: This will permanently delete YOUR profile, posts, comments, and images. This cannot be undone. Proceed?"
-    );
-
-    if (confirmed) {
-      try {
-        await api.delete('/users/me'); 
-        alert("Your account has been deleted.");
-        logout(); 
-        navigate('/login'); 
-      } catch (err) {
-        alert("Delete failed.");
-      }
-    }
+    if (!window.confirm('🚨 This will permanently delete your account. This cannot be undone.')) return;
+    try {
+      await api.delete('/users/me');
+      logout(); navigate('/login');
+    } catch { alert('Delete failed.'); }
   };
 
-  // 🚀 LOGIC: Admin wipes someone else
   const handleAdminDeleteUser = async () => {
-    const confirmed = window.confirm(
-      `🛡️ ADMIN ACTION: Permanently WIPE "${profileData.username}" and all their content?`
-    );
-
-    if (confirmed) {
-      try {
-        await api.delete(`/admin/users/${profileData.id}`); 
-        alert(`User ${profileData.username} wiped successfully.`);
-        navigate('/feed'); 
-      } catch (err) {
-        alert("Admin deletion failed. Check permissions.");
-      }
-    }
+    if (!window.confirm(`🛡️ Admin: Permanently wipe "${profileData.username}" and all their content?`)) return;
+    try {
+      await api.delete(`/admin/users/${profileData.id}`);
+      navigate('/feed');
+    } catch { alert('Admin delete failed.'); }
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-bold text-slate-400 italic">Synchronizing Profile...</div>;
-  if (!profileData) return <div className="min-h-screen flex items-center justify-center font-bold text-red-500">User Not Found</div>;
+  const TabBtn = ({ id, icon, label }) => (
+    <button onClick={() => setActiveTab(id)} style={{ flex: 1, padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600', fontSize: '13px', fontFamily: 'var(--font)', border: 'none', background: 'none', cursor: 'pointer', color: activeTab === id ? 'var(--accent)' : 'var(--text-3)', borderBottom: `2px solid ${activeTab === id ? 'var(--accent)' : 'transparent'}`, transition: 'all var(--transition)' }}>
+      {icon}{label}
+    </button>
+  );
+
+  if (isLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-3)', fontWeight: '500' }}>
+      <span className="spinner" /> Loading profile...
+    </div>
+  );
+
+  if (!profileData) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', fontWeight: '700' }}>
+      User Not Found
+    </div>
+  );
+
+  const avatarSrc = editPreviewUrl || (profileData.profileImageUrl ? `http://localhost:8080/uploads/${profileData.profileImageUrl}` : null);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* --- NAVBAR --- */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center gap-4">
-          <button onClick={() => navigate('/feed')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
-            <ArrowLeft size={24} />
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      {/* Navbar */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => navigate('/feed')} style={{ ...iconBtn, borderRadius: '50%', width: '36px', height: '36px' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-3)'; }}>
+            <ArrowLeft size={20} />
           </button>
-          <h2 className="text-xl font-bold text-slate-800">{profileData.username}</h2>
+          <span style={{ fontWeight: '800', fontSize: '17px', color: 'var(--text)' }}>{profileData.username}</span>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto py-8 px-4 relative">
-        
-        {/* --- EDIT MODAL --- */}
-        {isEditing && (
-           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-           <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative">
-             <button onClick={() => setIsEditing(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-100 rounded-full p-1"><X size={20} /></button>
-             <h2 className="text-2xl font-black text-slate-900 mb-6">Edit Profile</h2>
-             
-             <div className="flex flex-col items-center mb-6">
-               <div className="w-24 h-24 bg-slate-100 rounded-full overflow-hidden border-2 border-slate-200 mb-4 relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
-                 {editPreviewUrl ? (
-                   <img src={editPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                 ) : profileData.profileImageUrl ? (
-                   <img src={`http://localhost:8080/uploads/${profileData.profileImageUrl}`} alt="Current" className="w-full h-full object-cover" />
-                 ) : (
-                   <div className="w-full h-full flex items-center justify-center font-black text-3xl text-slate-400">{profileData.username.charAt(0).toUpperCase()}</div>
-                 )}
-                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera className="text-white" size={24} /></div>
-               </div>
-               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Change Avatar</p>
-             </div>
+      {/* Edit Modal */}
+      {isEditing && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div className="animate-scale-in glass-strong" style={{ borderRadius: 'var(--radius-xl)', padding: '36px', width: '100%', maxWidth: '440px', position: 'relative' }}>
+            <button onClick={() => setIsEditing(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-3)', transition: 'all var(--transition)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text-3)'; }}>
+              <X size={16} />
+            </button>
+            <h2 style={{ fontWeight: '800', fontSize: '20px', marginBottom: '28px', color: 'var(--text)' }}>Edit Profile</h2>
 
-             <div className="mb-6">
-               <label className="block text-sm font-bold text-slate-700 mb-2">Bio</label>
-               <textarea 
-                 value={editBio} 
-                 onChange={(e) => setEditBio(e.target.value)} 
-                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
-                 rows="3" 
-                 placeholder="Tell the world about yourself..." 
-               />
-             </div>
-             
-             <button 
-               onClick={handleEditSubmit} 
-               disabled={isSaving} 
-               className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
-             >
-               {isSaving ? "Saving..." : "Save Changes"}
-             </button>
-           </div>
-         </div>
-        )}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+              <div onClick={() => fileInputRef.current.click()} style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-strong)', cursor: 'pointer', position: 'relative', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '28px', color: 'var(--text-2)', marginBottom: '10px' }}>
+                {avatarSrc ? <img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : profileData.username?.[0]?.toUpperCase()}
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity var(--transition)' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                  <Camera size={22} color="white" />
+                </div>
+              </div>
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*" />
+              <span style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '500' }}>Click to change photo</span>
+            </div>
 
-        {/* --- PROFILE HEADER --- */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-8 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-blue-100 via-indigo-50 to-purple-100 opacity-70"></div>
-          
-          <div className="relative pt-12 flex flex-col md:flex-row justify-between items-end gap-6">
-            <div className="flex gap-6 items-end">
-              <div className="w-32 h-32 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-5xl shadow-xl border-4 border-white overflow-hidden flex-shrink-0">
-                {profileData.profileImageUrl ? (
-                  <img src={`http://localhost:8080/uploads/${profileData.profileImageUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-2)', letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Bio</label>
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3} placeholder="Tell the world about yourself..."
+                style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius)', padding: '12px 14px', fontSize: '14px', fontFamily: 'var(--font)', color: 'var(--text)', outline: 'none', resize: 'none', transition: 'all var(--transition)' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-glow)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border-strong)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            <button onClick={handleEditSubmit} disabled={isSaving} style={{ width: '100%', background: 'var(--accent-gradient)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '14px', fontWeight: '700', fontSize: '14px', fontFamily: 'var(--font)', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {isSaving ? <><span className="spinner" /> Saving...</> : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <main style={{ maxWidth: '860px', margin: '0 auto', padding: '28px 24px' }} className="animate-fade-up">
+        {/* Profile Header Card */}
+        <div style={{ ...card, marginBottom: '20px', position: 'relative' }}>
+          {/* Banner */}
+          <div style={{ height: '120px', background: 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(99,102,241,0.2) 100%)', borderBottom: '1px solid var(--border)' }} />
+
+          <div style={{ padding: '0 28px 28px' }}>
+            {/* Avatar + actions row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
+              <div style={{ width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--bg)', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '32px', color: 'white', marginTop: '-48px', flexShrink: 0, boxShadow: 'var(--shadow)' }}>
+                {profileData.profileImageUrl
+                  ? <img src={`http://localhost:8080/uploads/${profileData.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : profileData.username?.[0]?.toUpperCase()}
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                {isMyProfile ? (
+                  <>
+                    <button onClick={() => setIsEditing(true)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius)', padding: '9px 16px', fontWeight: '600', fontSize: '13px', fontFamily: 'var(--font)', cursor: 'pointer', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all var(--transition)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}>
+                      <Settings size={15} /> Edit Profile
+                    </button>
+                    <button onClick={handleDeleteMyAccount} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 'var(--radius)', padding: '9px 16px', fontWeight: '600', fontSize: '13px', fontFamily: 'var(--font)', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all var(--transition)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}>
+                      <Trash2 size={15} /> Delete
+                    </button>
+                  </>
                 ) : (
-                  profileData.username.charAt(0).toUpperCase()
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {isAdmin && (
+                      <button onClick={handleAdminDeleteUser} style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 'var(--radius)', padding: '9px 16px', fontWeight: '600', fontSize: '13px', fontFamily: 'var(--font)', cursor: 'pointer', color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all var(--transition)' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.2)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}>
+                        <Trash2 size={15} /> Wipe User
+                      </button>
+                    )}
+                    <button onClick={handleFollowToggle} style={{ background: isFollowing ? 'var(--surface-2)' : 'var(--accent-gradient)', border: isFollowing ? '1px solid var(--border-strong)' : 'none', borderRadius: 'var(--radius)', padding: '9px 20px', fontWeight: '700', fontSize: '13px', fontFamily: 'var(--font)', cursor: 'pointer', color: isFollowing ? 'var(--text)' : 'white', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all var(--transition)', boxShadow: isFollowing ? 'none' : 'var(--shadow-accent)' }}>
+                      {isFollowing ? <UserCheck size={15} /> : <UserPlus size={15} />}
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  </div>
                 )}
               </div>
-              <div className="pb-2">
-                <h1 className="text-3xl font-black text-slate-900">{profileData.username}</h1>
-                <p className="text-slate-500 font-medium">{profileData.email}</p>
+            </div>
+
+            {/* Info */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <h1 style={{ fontWeight: '800', fontSize: '22px', color: 'var(--text)', letterSpacing: '-0.01em' }}>{profileData.username}</h1>
                 {profileData.role === 'ROLE_ADMIN' && (
-                  <span className="inline-flex items-center gap-1 mt-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-amber-100">
-                    <ShieldAlert size={10} /> Official Admin
+                  <span style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '6px', padding: '2px 8px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <ShieldAlert size={10} /> Admin
                   </span>
                 )}
               </div>
-            </div>
+              <p style={{ color: 'var(--text-3)', fontSize: '13px', marginBottom: '12px', fontFamily: 'var(--mono)' }}>{profileData.email}</p>
+              {profileData.bio && <p style={{ color: 'var(--text-2)', fontSize: '14px', lineHeight: '1.7', maxWidth: '520px' }}>{profileData.bio}</p>}
 
-            <div className="flex gap-3 w-full md:w-auto">
-              {isMyProfile ? (
-                <>
-                  <button onClick={() => setIsEditing(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all">
-                    <Settings size={18} /> Edit Profile
-                  </button>
-                  <button onClick={handleDeleteMyAccount} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-600 hover:text-white transition-all border border-red-100 shadow-lg shadow-red-100/30">
-                    <Trash2 size={18} /> Delete Account
-                  </button>
-                </>
-              ) : (
-                <div className="flex gap-2 w-full md:w-auto">
-                   {isAdmin && (
-                    <button 
-                      onClick={handleAdminDeleteUser} 
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition-all shadow-lg shadow-orange-200"
-                    >
-                      <Trash2 size={18} /> Admin Wipe
-                    </button>
-                   )}
-
-                  <button 
-                    onClick={handleFollowToggle}
-                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${
-                      isFollowing ? 'bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
-                    }`}
-                  >
-                    {isFollowing ? <UserCheck size={18} /> : <UserPlus size={18} />}
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <p className="text-slate-700 text-lg leading-relaxed max-w-2xl">
-              {profileData.bio || "No bio written yet."}
-            </p>
-            
-            <div className="flex gap-8 mt-6">
-              <div className="flex gap-2 items-center cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setActiveTab('posts')}>
-                <span className="font-black text-slate-900 text-lg">{userPosts.length}</span>
-                <span className="text-slate-500 font-medium">Posts</span>
-              </div>
-              <div className="flex gap-2 items-center cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setActiveTab('followers')}>
-                <span className="font-black text-slate-900 text-lg">{profileData.followersCount}</span>
-                <span className="text-slate-500 font-medium">Followers</span>
-              </div>
-              <div className="flex gap-2 items-center cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setActiveTab('following')}>
-                <span className="font-black text-slate-900 text-lg">{profileData.followingCount}</span>
-                <span className="text-slate-500 font-medium">Following</span>
+              {/* Stats */}
+              <div style={{ display: 'flex', gap: '28px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                {[
+                  { label: 'Posts', value: userPosts.length, tab: 'posts' },
+                  { label: 'Followers', value: profileData.followersCount, tab: 'followers' },
+                  { label: 'Following', value: profileData.followingCount, tab: 'following' },
+                ].map(stat => (
+                  <div key={stat.tab} onClick={() => setActiveTab(stat.tab)} style={{ cursor: 'pointer', transition: 'opacity var(--transition)' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                    <span style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text)', display: 'block', letterSpacing: '-0.02em' }}>{stat.value}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* --- TABS --- */}
-        <div className="flex border-b border-slate-200 mb-8">
-          <button onClick={() => setActiveTab('posts')} className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-all ${activeTab === 'posts' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}><Grid size={20} /> Posts</button>
-          <button onClick={() => setActiveTab('followers')} className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-all ${activeTab === 'followers' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}><Users size={20} /> Followers</button>
-          <button onClick={() => setActiveTab('following')} className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-all ${activeTab === 'following' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}><UserCheck size={20} /> Following</button>
+        {/* Tabs */}
+        <div style={{ ...card, marginBottom: '20px', display: 'flex', overflow: 'hidden' }}>
+          <TabBtn id="posts" icon={<Grid size={16} />} label="Posts" />
+          <TabBtn id="followers" icon={<Users size={16} />} label="Followers" />
+          <TabBtn id="following" icon={<UserCheck size={16} />} label="Following" />
         </div>
 
-        {/* --- TAB CONTENT --- */}
+        {/* Tab Content */}
         {activeTab === 'posts' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {userPosts.length === 0 ? <div className="col-span-full text-center py-20 bg-white rounded-[2rem] border border-dashed border-slate-300 text-slate-500">No posts shared yet.</div> : (
-              userPosts.map(post => (
-                <div key={post.id} className="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md cursor-pointer">
-                  {post.imageUrl && <img src={`http://localhost:8080/uploads/${post.imageUrl}`} alt="Post" className="w-full h-48 object-cover border-b border-slate-50" />}
-                  <div className="p-6 flex-1 flex flex-col">
-                    <p className="text-slate-700 line-clamp-3 mb-4 flex-1">{post.content}</p>
-                    <div className="flex gap-4 pt-4 border-t border-slate-50 text-slate-400 font-bold text-sm">
-                      <span className="flex items-center gap-1.5"><Heart size={16} /> {post.likes?.length || 0}</span>
-                      <span className="flex items-center gap-1.5"><MessageCircle size={16} /> {post.comments?.length || 0}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }} className="stagger">
+            {userPosts.length === 0
+              ? <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px 20px', ...card, color: 'var(--text-3)', fontSize: '14px' }}>No posts yet.</div>
+              : userPosts.map(post => (
+                <div key={post.id} style={{ ...card, cursor: 'pointer', display: 'flex', flexDirection: 'column', transition: 'border-color var(--transition)' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                  {post.imageUrl && <img src={`http://localhost:8080/uploads/${post.imageUrl}`} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderBottom: '1px solid var(--border)' }} />}
+                  <div style={{ padding: '16px', flex: 1 }}>
+                    <p style={{ color: 'var(--text-2)', fontSize: '13px', lineHeight: '1.6', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '12px' }}>{post.content}</p>
+                    <div style={{ display: 'flex', gap: '14px', color: 'var(--text-3)', fontSize: '12px', fontWeight: '600', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Heart size={13} /> {post.likes?.length || 0}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageCircle size={13} /> {post.comments?.length || 0}</span>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
           </div>
         )}
 
-        {activeTab === 'followers' && (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {followersList.length === 0 ? <div className="col-span-full text-center py-10 text-slate-400 italic">No followers yet.</div> : followersList.map(user => (
-               <div key={user.id} onClick={() => navigate(`/profile/${user.username}`)} className="bg-white p-4 rounded-2xl border flex items-center gap-4 cursor-pointer hover:shadow-md transition-all group">
-                 <div className="w-12 h-12 bg-slate-100 rounded-full overflow-hidden flex items-center justify-center font-bold text-slate-400">
-                   {user.profileImageUrl ? <img src={`http://localhost:8080/uploads/${user.profileImageUrl}`} className="w-full h-full object-cover" /> : user.username.charAt(0).toUpperCase()}
-                 </div>
-                 <h4 className="font-bold text-slate-800 group-hover:text-blue-600">{user.username}</h4>
-               </div>
-             ))}
-           </div>
+        {(activeTab === 'followers' || activeTab === 'following') && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }} className="stagger">
+            {(activeTab === 'followers' ? followersList : followingList).length === 0
+              ? <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: 'var(--text-3)', fontSize: '14px' }}>None yet.</div>
+              : (activeTab === 'followers' ? followersList : followingList).map(user => (
+                <div key={user.id} onClick={() => navigate(`/profile/${user.username}`)} style={{ ...card, padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'border-color var(--transition)' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                  <Avatar user={user} size={42} />
+                  <div>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text)' }}>{user.username}</p>
+                  </div>
+                </div>
+              ))}
+          </div>
         )}
-
-        {activeTab === 'following' && (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {followingList.length === 0 ? <div className="col-span-full text-center py-10 text-slate-400 italic">Not following anyone yet.</div> : followingList.map(user => (
-               <div key={user.id} onClick={() => navigate(`/profile/${user.username}`)} className="bg-white p-4 rounded-2xl border flex items-center gap-4 cursor-pointer hover:shadow-md transition-all group">
-                 <div className="w-12 h-12 bg-slate-100 rounded-full overflow-hidden flex items-center justify-center font-bold text-slate-400">
-                   {user.profileImageUrl ? <img src={`http://localhost:8080/uploads/${user.profileImageUrl}`} className="w-full h-full object-cover" /> : user.username.charAt(0).toUpperCase()}
-                 </div>
-                 <h4 className="font-bold text-slate-800 group-hover:text-blue-600">{user.username}</h4>
-               </div>
-             ))}
-           </div>
-        )}
-
       </main>
     </div>
   );

@@ -6,139 +6,113 @@ import Button from '../components/ui/Button';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    bio: '', // 👈 Added for your API
-    role: 'ROLE_USER' // 👈 Default role for new signups
+    username: '', email: '', password: '', confirmPassword: '', bio: '', role: 'ROLE_USER'
   });
-  
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validate = () => {
+    const e = {};
+    if (!formData.username.trim()) e.username = 'Username is required';
+    else if (formData.username.length < 3) e.username = 'At least 3 characters';
+    if (!formData.email) e.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = 'Invalid email format';
+    if (!formData.password) e.password = 'Password is required';
+    else if (formData.password.length < 6) e.password = 'At least 6 characters';
+    if (formData.password !== formData.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    return e;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      return setError("Passwords do not match.");
-    }
-
+    setGlobalError('');
+    const fieldErrors = validate();
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return; }
+    setErrors({});
     setIsLoading(true);
-
     try {
-      /**
-       * 🚀 SWAGGER MATCH:
-       * We are now sending the exact JSON structure your API expects.
-       */
-      const signupPayload = {
-        id: 0, // Backend will override this with DB sequence
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        bio: formData.bio,
-        role: formData.role
-      };
-
-      // Change this line in Signup.jsx
-await api.post('/users/signup', signupPayload); // 👈 Changed from /register to /signup
-      
+      await api.post('/users/signup', {
+        id: 0, username: formData.username, email: formData.email,
+        password: formData.password, bio: formData.bio, role: formData.role
+      });
       navigate('/login');
     } catch (err) {
-      const errorMessage = err.response?.data || "Signup failed. Check your API logs.";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+      setGlobalError(err.response?.data || 'Signup failed. Please try again.');
+    } finally { setIsLoading(false); }
+  };
+
+  const handleChange = (field) => (e) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    if (globalError) setGlobalError('');
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6">
-      <div className="w-full max-w-[460px]">
-        
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v9m-1.5-1.5l1.5 1.5 1.5-1.5M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative' }}>
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', width: '500px', height: '500px', borderRadius: '50%', top: '-100px', right: '-100px', background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', width: '400px', height: '400px', borderRadius: '50%', bottom: '-100px', left: '-100px', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+      </div>
+
+      <div style={{ width: '100%', maxWidth: '480px', position: 'relative', zIndex: 1 }} className="animate-fade-up">
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{ width: '52px', height: '52px', margin: '0 auto 14px', borderRadius: '14px', background: 'var(--accent-gradient)', boxShadow: 'var(--shadow-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Account</h1>
-          <p className="text-slate-500 text-sm font-bold mt-1 uppercase tracking-widest">Connect with the world</p>
+          <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            Join <span className="gradient-text">SocialHub</span>
+          </h1>
+          <p style={{ color: 'var(--text-3)', fontSize: '13px', marginTop: '6px', fontWeight: '500' }}>Connect. Share. Grow.</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm p-8 md:p-10">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-xs font-bold text-center">
-                {error}
-              </div>
-            )}
+        <div className="glass-strong" style={{ borderRadius: 'var(--radius-xl)', padding: '36px' }}>
+          {globalError && (
+            <div className="animate-scale-in" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: '600' }}>{globalError}</span>
+            </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Username"
-                placeholder="het_dev"
-                value={formData.username}
-                onChange={(e) => setFormData({...formData, username: e.target.value})}
-                required
-              />
-              <Input 
-                label="Email"
-                type="email"
-                placeholder="het@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                required
-              />
+          <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <Input label="Username" placeholder="het_dev" value={formData.username} onChange={handleChange('username')} error={errors.username} />
+              <Input label="Email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange('email')} error={errors.email} />
             </div>
 
-            {/* Added Bio Field per your Swagger Schema */}
-            <div className="flex flex-col gap-2 w-full text-left">
-              <label className="text-sm font-bold text-slate-700 ml-1">Short Bio</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Short Bio</label>
               <textarea
-                placeholder="Tell us about yourself..."
-                className="w-full px-5 py-3 rounded-2xl border border-slate-200 bg-white/50 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 text-slate-900 text-sm min-h-[80px]"
+                placeholder="Tell the world about yourself..."
                 value={formData.bio}
-                onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                onChange={handleChange('bio')}
+                rows={2}
+                style={{
+                  width: '100%', background: 'var(--surface)', border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius)', padding: '14px 16px', fontSize: '14px',
+                  fontFamily: 'var(--font)', color: 'var(--text)', outline: 'none', resize: 'none',
+                  transition: 'all var(--transition)',
+                }}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-glow)'; e.target.style.background = 'var(--surface-2)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border-strong)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'var(--surface)'; }}
               />
             </div>
 
-            <Input 
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              required
-            />
+            <Input label="Password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange('password')} error={errors.password} />
+            <Input label="Confirm Password" type="password" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange('confirmPassword')} error={errors.confirmPassword} />
 
-            <Input 
-              label="Confirm Password"
-              type="password"
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-              required
-            />
-
-            <Button 
-              type="submit" 
-              loading={isLoading} 
-              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-blue-100 shadow-xl mt-4"
-            >
-              Sign Up
+            <Button type="submit" loading={isLoading} style={{ width: '100%', marginTop: '4px', padding: '15px' }}>
+              Create Account
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-50 text-center">
-            <p className="text-slate-500 text-sm font-semibold">
-              Already have an account? {' '}
-              <Link to="/login" className="text-blue-600 font-bold hover:underline">
-                Log in
-              </Link>
+          <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>
+              Already have an account?{' '}
+              <Link to="/login" style={{ color: 'var(--accent)', fontWeight: '700', textDecoration: 'none' }}>Sign in</Link>
             </p>
           </div>
         </div>
