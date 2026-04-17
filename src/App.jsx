@@ -6,6 +6,8 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile'; 
 import Chat from './components/Chat'; 
 import ProtectedRoute from './components/ProtectedRoute';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -34,7 +36,9 @@ function App() {
             <Chat />
           </ProtectedRoute>
         } />
-        
+
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Navigate to="/feed" />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
