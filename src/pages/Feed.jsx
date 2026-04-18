@@ -124,7 +124,7 @@ const Feed = () => {
     formData.append('content', newPostContent);
     if (selectedFile) formData.append('file', selectedFile);
     try {
-      const r = await api.post('/posts', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const r = await api.post('/posts', formData, { headers: { 'Content-Type': undefined } });
       setPosts([r.data, ...posts]);
       setNewPostContent(''); 
       setSelectedFile(null); 
