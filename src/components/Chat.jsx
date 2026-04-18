@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
-import api from '../api/axios';
+import api, { API_BASE } from '../api/axios';
 import { Send, MessageCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +31,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!currentUser) return;
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS(`${API_BASE}/ws`);
     const client = Stomp.over(socket);
     client.debug = () => {};
     client.connect({}, () => {
@@ -86,7 +86,7 @@ const Chat = () => {
   const Avatar = ({ user, size = 40 }) => (
     <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: size * 0.35 }}>
       {user?.profileImageUrl
-        ? <img src={`http://localhost:8080/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={`${API_BASE}/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : (user?.username?.[0] || '?').toUpperCase()}
     </div>
   );
