@@ -197,7 +197,7 @@ const Feed = () => {
   const Avatar = ({ user, size = 40 }) => (
     <div style={{ ...avatarBase, width: size, height: size, fontSize: size * 0.35 }}>
       {user?.profileImageUrl
-        ? <img src={`${API_BASE}/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={user.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : (user?.username?.[0] || 'U').toUpperCase()}
     </div>
   );
@@ -302,7 +302,7 @@ const Feed = () => {
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}>
                 {currentUser.profileImageUrl
-                  ? <img src={`${API_BASE}/uploads/${currentUser.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <img src={currentUser.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '14px', color: 'white' }}>{currentUser.username?.[0].toUpperCase()}</div>}
               </div>
             )}
@@ -326,7 +326,7 @@ const Feed = () => {
             <div style={{ display: 'flex', gap: '14px' }}>
               <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border-strong)', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: 'white', fontSize: '16px' }}>
                 {currentUser?.profileImageUrl
-                  ? <img src={`${API_BASE}/uploads/${currentUser.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <img src={currentUser.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : (currentUser?.username?.[0] || 'U').toUpperCase()}
               </div>
               <textarea
@@ -407,7 +407,7 @@ const Feed = () => {
                 <div style={{ padding: '14px 20px', color: 'var(--text-2)', fontSize: '14px', lineHeight: '1.7' }}>{post.content}</div>
                 {post.imageUrl && (
                   <div style={{ padding: '0 20px 16px' }}>
-                    <img src={`${API_BASE}/uploads/${post.imageUrl}`} style={{ width: '100%', maxHeight: '360px', objectFit: 'cover', borderRadius: 'var(--radius)', display: 'block', border: '1px solid var(--border)' }} />
+                    <img src={post.imageUrl} style={{ width: '100%', maxHeight: '360px', objectFit: 'cover', borderRadius: 'var(--radius)', display: 'block', border: '1px solid var(--border)' }} />
                   </div>
                 )}
 

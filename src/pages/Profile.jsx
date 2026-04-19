@@ -13,7 +13,7 @@ const iconBtn = { background: 'none', border: 'none', cursor: 'pointer', display
 const Avatar = ({ user, size = 40 }) => (
   <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: size * 0.35 }}>
     {user?.profileImageUrl
-      ? <img src={`${API_BASE}/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ? <img src={user.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       : (user?.username?.[0] || '?').toUpperCase()}
   </div>
 );
@@ -124,7 +124,7 @@ const Profile = () => {
     </div>
   );
 
-  const avatarSrc = editPreviewUrl || (profileData.profileImageUrl ? `${API_BASE}/uploads/${profileData.profileImageUrl}` : null);
+  const avatarSrc = editPreviewUrl || (profileData.profileImageUrl ? profileData.profileImageUrl : null);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -191,7 +191,7 @@ const Profile = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
               <div style={{ width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--bg)', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '32px', color: 'white', marginTop: '-48px', flexShrink: 0, boxShadow: 'var(--shadow)' }}>
                 {profileData.profileImageUrl
-                  ? <img src={`${API_BASE}/uploads/${profileData.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <img src={profileData.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : profileData.username?.[0]?.toUpperCase()}
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
@@ -274,7 +274,7 @@ const Profile = () => {
                 <div key={post.id} style={{ ...card, cursor: 'pointer', display: 'flex', flexDirection: 'column', transition: 'border-color var(--transition)' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-                  {post.imageUrl && <img src={`${API_BASE}/uploads/${post.imageUrl}`} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderBottom: '1px solid var(--border)' }} />}
+                  {post.imageUrl && <img src={post.imageUrl} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderBottom: '1px solid var(--border)' }} />}
                   <div style={{ padding: '16px', flex: 1 }}>
                     <p style={{ color: 'var(--text-2)', fontSize: '13px', lineHeight: '1.6', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '12px' }}>{post.content}</p>
                     <div style={{ display: 'flex', gap: '14px', color: 'var(--text-3)', fontSize: '12px', fontWeight: '600', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>

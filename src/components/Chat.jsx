@@ -100,7 +100,7 @@ const Chat = () => {
   const Avatar = ({ user, size = 40 }) => (
     <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', fontSize: size * 0.35 }}>
       {user?.profileImageUrl
-        ? <img src={`${API_BASE}/uploads/${user.profileImageUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={user.profileImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : (user?.username?.[0] || '?').toUpperCase()}
     </div>
   );
