@@ -59,11 +59,16 @@ const Chat = () => {
     if (!newMessage.trim() || !selectedFriend) return;
     const content = newMessage;
     setNewMessage('');
-    const localMsg = { id: Math.random() * -1000, sender: { username: currentUser.username }, content, timestamp: new Date().toISOString() };
+    const tempId = Date.now() * -1;
+    const localMsg = { id: tempId, sender: { username: currentUser.username }, content, timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, localMsg]);
     try {
-      await api.post('/chat/send', { recipientId: selectedFriend.id, content });
-    } catch { alert('Message failed to send.'); }
+      const res = await api.post('/chat/send', { recipientId: selectedFriend.id, content });
+      setMessages(prev => prev.map(m => m.id === tempId ? res.data : m));
+    } catch {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      alert('Message failed to send.');
+    }
   };
 
   const handleDeleteMessage = async (messageId) => {
