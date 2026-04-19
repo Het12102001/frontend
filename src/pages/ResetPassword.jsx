@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../api/axios';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -24,8 +25,8 @@ const ResetPassword = () => {
     setErrors({}); setGlobalError(''); setIsLoading(true);
     try {
       await api.post('/users/reset-password', { token, newPassword: pwd });
-      alert('Password updated! Please sign in.');
-      navigate('/login');
+      toast.success('Password updated! Signing you in...');
+      setTimeout(() => navigate('/login'), 1500);
     } catch {
       setGlobalError('Link expired or invalid. Request a new one.');
     } finally { setIsLoading(false); }

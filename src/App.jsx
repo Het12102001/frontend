@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Feed from './pages/Feed';
@@ -12,6 +13,20 @@ import ResetPassword from './pages/ResetPassword';
 function App() {
   return (
     <Router>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#1a1f2e',
+            color: '#e2e8f0',
+            border: '1px solid rgba(255,255,255,0.08)',
+            fontFamily: 'var(--font)',
+            fontSize: '14px',
+          },
+          success: { iconTheme: { primary: '#22c55e', secondary: '#1a1f2e' } },
+          error:   { iconTheme: { primary: '#ef4444', secondary: '#1a1f2e' } },
+        }}
+      />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

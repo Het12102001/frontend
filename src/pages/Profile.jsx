@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api, { API_BASE } from '../api/axios';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import {
   ArrowLeft, Heart, MessageCircle, Settings, Camera,
@@ -37,6 +39,9 @@ const Profile = () => {
   const [editFile, setEditFile] = useState(null);
   const [editPreviewUrl, setEditPreviewUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const showConfirm = (message, onConfirm) => setConfirmConfig({ message, onConfirm });
+
   const fileInputRef = useRef(null);
 
   const fetchProfile = async () => {
@@ -76,7 +81,7 @@ const Profile = () => {
       await api.put('/users/profile/edit', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setIsEditing(false); setEditFile(null); setEditPreviewUrl('');
       fetchProfile();
-    } catch { alert('Update failed.'); }
+    } catch { toast.error('Update failed.'); }
     finally { setIsSaving(false); }
   };
 
@@ -87,23 +92,25 @@ const Profile = () => {
       setProfileData(prev => ({ ...prev, followersCount: isFollowing ? prev.followersCount - 1 : prev.followersCount + 1 }));
       const r = await api.get(`/users/${username}/followers`);
       setFollowersList(r.data || []);
-    } catch { alert('Action failed.'); }
+    } catch { toast.error('Action failed.'); }
   };
 
-  const handleDeleteMyAccount = async () => {
-    if (!window.confirm('🚨 This will permanently delete your account. This cannot be undone.')) return;
-    try {
-      await api.delete('/users/me');
-      logout(); navigate('/login');
-    } catch { alert('Delete failed.'); }
+  const handleDeleteMyAccount = () => {
+    showConfirm('This will permanently delete your account. This cannot be undone.', async () => {
+      try {
+        await api.delete('/users/me');
+        logout(); navigate('/login');
+      } catch { toast.error('Delete failed.'); }
+    });
   };
 
-  const handleAdminDeleteUser = async () => {
-    if (!window.confirm(`🛡️ Admin: Permanently wipe "${profileData.username}" and all their content?`)) return;
-    try {
-      await api.delete(`/admin/users/${profileData.id}`);
-      navigate('/feed');
-    } catch { alert('Admin delete failed.'); }
+  const handleAdminDeleteUser = () => {
+    showConfirm(`Admin: Permanently wipe "${profileData.username}" and all their content?`, async () => {
+      try {
+        await api.delete(`/admin/users/${profileData.id}`);
+        navigate('/feed');
+      } catch { toast.error('Admin delete failed.'); }
+    });
   };
 
   const TabBtn = ({ id, icon, label }) => (
@@ -128,6 +135,13 @@ const Profile = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      {confirmConfig && (
+        <ConfirmModal
+          message={confirmConfig.message}
+          onConfirm={() => { confirmConfig.onConfirm(); setConfirmConfig(null); }}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
       {/* Navbar */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', gap: '12px' }}>

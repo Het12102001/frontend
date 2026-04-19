@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
+import toast from 'react-hot-toast';
 import api, { API_BASE } from '../api/axios';
+import ConfirmModal from './ui/ConfirmModal';
 import { Send, MessageCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +13,9 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const showConfirm = (message, onConfirm) => setConfirmConfig({ message, onConfirm });
 
   const stompClient = useRef(null);
   const scrollRef = useRef(null);
@@ -76,25 +81,27 @@ const Chat = () => {
       setMessages(prev => prev.map(m => m.id === tempId ? res.data : m));
     } catch {
       setMessages(prev => prev.filter(m => m.id !== tempId));
-      alert('Message failed to send.');
+      toast.error('Message failed to send.');
     }
   };
 
-  const handleDeleteMessage = async (messageId) => {
-    if (messageId < 0) { alert('Wait for message to sync.'); return; }
-    if (!window.confirm('Delete this message?')) return;
-    try {
-      await api.delete(`/chat/messages/${messageId}`);
-      setMessages(messages.filter(m => m.id !== messageId));
-    } catch { alert('Delete failed.'); }
+  const handleDeleteMessage = (messageId) => {
+    if (messageId < 0) { toast('Still syncing, try again.'); return; }
+    showConfirm('Delete this message?', async () => {
+      try {
+        await api.delete(`/chat/messages/${messageId}`);
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+      } catch { toast.error('Delete failed.'); }
+    });
   };
 
-  const handleClearChat = async () => {
-    if (!window.confirm(`Clear all messages with ${selectedFriend.username}?`)) return;
-    try {
-      await api.delete(`/chat/clear/${selectedFriend.username}`);
-      setMessages([]);
-    } catch { alert('Clear failed.'); }
+  const handleClearChat = () => {
+    showConfirm(`Clear all messages with ${selectedFriend.username}?`, async () => {
+      try {
+        await api.delete(`/chat/clear/${selectedFriend.username}`);
+        setMessages([]);
+      } catch { toast.error('Clear failed.'); }
+    });
   };
 
   const Avatar = ({ user, size = 40 }) => (
@@ -112,6 +119,13 @@ const Chat = () => {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      {confirmConfig && (
+        <ConfirmModal
+          message={confirmConfig.message}
+          onConfirm={() => { confirmConfig.onConfirm(); setConfirmConfig(null); }}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
       {/* Topbar */}
       <nav style={{ background: 'rgba(8,12,20,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', padding: '0 20px', height: '60px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         <button onClick={() => navigate('/feed')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', borderRadius: '10px', padding: '8px', transition: 'all var(--transition)' }}

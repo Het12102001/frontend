@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api, { API_BASE } from '../api/axios';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import {
   LogOut, Heart, MessageCircle, Share2,
@@ -60,10 +62,14 @@ const Feed = () => {
   const [trendingTags, setTrendingTags] = useState([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const [confirmConfig, setConfirmConfig] = useState(null);
+
   const fileInputRef = useRef(null);
   const searchDropdownRef = useRef(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  const showConfirm = (message, onConfirm) => setConfirmConfig({ message, onConfirm });
 
   const isAdmin = currentUser?.role === 'ROLE_ADMIN';
 
@@ -135,9 +141,9 @@ const Feed = () => {
     } catch (err) {
       const status = err?.response?.status;
       if (status === 403 || status === 400) {
-        alert("Post failed. Avoid prohibited language.");
+        toast.error("Post failed. Avoid prohibited language.");
       } else {
-        alert("Post failed. Please try again.");
+        toast.error("Post failed. Please try again.");
       }
     }
     finally { setIsPosting(false); }
@@ -151,12 +157,14 @@ const Feed = () => {
     } catch {}
   };
 
-  const handleDelete = async (postId) => {
-    if (!window.confirm(isAdmin ? '🛡️ Admin: Delete this post?' : 'Delete this post?')) return;
-    try {
-      isAdmin ? await api.delete(`/admin/posts/${postId}`) : await api.delete(`/posts/${postId}`);
-      setPosts(posts.filter(p => p.id !== postId));
-    } catch { alert('Delete failed.'); }
+  const handleDelete = (postId) => {
+    showConfirm(isAdmin ? 'Admin: Delete this post?' : 'Delete this post?', async () => {
+      try {
+        isAdmin ? await api.delete(`/admin/posts/${postId}`) : await api.delete(`/posts/${postId}`);
+        setPosts(posts.filter(p => p.id !== postId));
+        toast.success('Post deleted.');
+      } catch { toast.error('Delete failed.'); }
+    });
   };
 
   const toggleComments = (postId) => setExpandedComments(p => ({ ...p, [postId]: !p[postId] }));
@@ -169,16 +177,17 @@ const Feed = () => {
       const r = await api.get('/posts?page=0&size=10');
       setPosts(r.data.content || []);
       setCommentTexts(p => ({ ...p, [postId]: '' }));
-    } catch { alert('Comment failed.'); }
+    } catch { toast.error('Comment failed.'); }
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm(isAdmin ? '🛡️ Admin: Delete comment?' : 'Delete comment?')) return;
-    try {
-      isAdmin ? await api.delete(`/admin/comments/${commentId}`) : await api.delete(`/posts/comments/${commentId}`);
-      const r = await api.get('/posts?page=0&size=10');
-      setPosts(r.data.content || []);
-    } catch { alert('Delete failed.'); }
+  const handleDeleteComment = (commentId) => {
+    showConfirm(isAdmin ? 'Admin: Delete comment?' : 'Delete comment?', async () => {
+      try {
+        isAdmin ? await api.delete(`/admin/comments/${commentId}`) : await api.delete(`/posts/comments/${commentId}`);
+        const r = await api.get('/posts?page=0&size=10');
+        setPosts(r.data.content || []);
+      } catch { toast.error('Delete failed.'); }
+    });
   };
 
   const handleFollowSuggested = async (userId) => {
@@ -186,7 +195,7 @@ const Feed = () => {
       await api.post(`/users/${userId}/follow`);
       setSuggestedUsers(p => p.filter(u => u.id !== userId));
       fetchFeedData();
-    } catch { alert('Follow failed.'); }
+    } catch { toast.error('Follow failed.'); }
   };
 
   const isOwnerCheck = (itemUser) => {
@@ -204,6 +213,13 @@ const Feed = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      {confirmConfig && (
+        <ConfirmModal
+          message={confirmConfig.message}
+          onConfirm={() => { confirmConfig.onConfirm(); setConfirmConfig(null); }}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
       {/* ── Navbar ── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 50,
