@@ -37,7 +37,16 @@ const Chat = () => {
     client.connect({}, () => {
       client.subscribe(`/topic/messages/${currentUser.username}`, (payload) => {
         const msg = JSON.parse(payload.body);
-        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          const tempIdx = prev.findIndex(m => m.id < 0 && m.content === msg.content && m.sender?.username === msg.sender?.username);
+          if (tempIdx !== -1) {
+            const updated = [...prev];
+            updated[tempIdx] = msg;
+            return updated;
+          }
+          return [...prev, msg];
+        });
       });
     }, err => console.error('STOMP Error:', err));
     stompClient.current = client;
