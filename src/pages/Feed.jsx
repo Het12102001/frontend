@@ -68,21 +68,24 @@ const Feed = () => {
   const isAdmin = currentUser?.role === 'ROLE_ADMIN';
 
   const fetchFeedData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const meRes = await api.get('/users/me/details');
       setCurrentUser(meRes.data);
+    } catch (err) { console.error('User load error:', err); }
+    try {
       const postsRes = await api.get('/posts?page=0&size=10');
       setPosts(postsRes.data.content || []);
+    } catch (err) { console.error('Posts load error:', err); }
+    try {
       const suggestedRes = await api.get('/discovery/suggested');
       setSuggestedUsers(suggestedRes.data || []);
+    } catch {}
+    try {
       const trendsRes = await api.get('/discovery/trending');
       setTrendingTags(trendsRes.data || []);
-    } catch (err) {
-      console.error('Feed load error:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch {}
+    setIsLoading(false);
   };
 
   useEffect(() => { fetchFeedData(); }, []);
